@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from matrixgame_systems.kernels.adaln import adaln_reference, fused_adaln
 
+
 @pytest.mark.parametrize("shape", [(3, 8), (2, 4, 16)])
 def test_reference_matches_definition(shape):
     torch.manual_seed(0)
@@ -46,5 +47,9 @@ def test_triton_forward_and_backward(dtype):
     y_tri.backward(grad)
     tolerance = 3e-2 if dtype == torch.bfloat16 else 1e-2
     torch.testing.assert_close(y_tri, y_ref, rtol=tolerance, atol=tolerance)
-    for actual, expected in zip((x_tri.grad, s_tri.grad, b_tri.grad), (x_ref.grad, s_ref.grad, b_ref.grad)):
+    for actual, expected in zip(
+        (x_tri.grad, s_tri.grad, b_tri.grad),
+        (x_ref.grad, s_ref.grad, b_ref.grad),
+        strict=True,
+    ):
         torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)

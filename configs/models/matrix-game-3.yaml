@@ -1,0 +1,7 @@
+id: matrix-game-3
+upstream: third_party/Matrix-Game
+checkpoint: ${MATRIX_GAME_CKPT}
+resolution: [704, 1280]
+frames: 97
+num_gpus: 1
+precision: bf16

@@ -1,0 +1,3 @@
+from .catalog import STANDARD_OPTIMIZATIONS
+
+__all__ = ["STANDARD_OPTIMIZATIONS"]

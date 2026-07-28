@@ -130,7 +130,7 @@ class DynamicBatchScheduler:
             )
             if len(outputs) != len(active):
                 raise RuntimeError("Backend returned the wrong number of outputs")
-            for state, output in zip(active, outputs):
+            for state, output in zip(active, outputs, strict=True):
                 if state.cancel_event.is_set():
                     await self._finish_cancelled(state)
                     continue

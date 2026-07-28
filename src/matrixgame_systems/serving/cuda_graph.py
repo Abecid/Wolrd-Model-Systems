@@ -38,7 +38,7 @@ class CUDAGraphRunner:
             raise RuntimeError("Call capture() first")
         if len(inputs) != len(self.static_inputs):
             raise ValueError("Input count changed")
-        for static, incoming in zip(self.static_inputs, inputs):
+        for static, incoming in zip(self.static_inputs, inputs, strict=True):
             if static.shape != incoming.shape or static.dtype != incoming.dtype:
                 raise ValueError("CUDA graph input shape/dtype changed")
             static.copy_(incoming)

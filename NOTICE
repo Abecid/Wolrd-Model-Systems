@@ -1,8 +1,10 @@
-MatrixGame Systems
+World Model Systems
 Copyright 2026 Adam / Abecid
 
-This is an unofficial project. It integrates with, but does not redistribute,
-SkyworkAI Matrix-Game source code or model weights.
+This is an independent systems optimization project. It integrates with but does
+not redistribute third-party world-model source code or weights.
 
-Matrix-Game 3.0 is developed by SkyworkAI. See the upstream repository for its
-license, notices, model terms, and citations.
+Supported upstream projects currently include SkyworkAI Matrix-Game 3.0,
+Robbyant LingBot-World 2.0, and Tencent Hunyuan HY-WorldPlay. Their names,
+source code, checkpoints and licenses remain the property of their respective
+owners. See THIRD_PARTY.md.

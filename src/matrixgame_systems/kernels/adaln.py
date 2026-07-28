@@ -200,7 +200,7 @@ def fused_adaln(
     implementation rather than silently returning wrong gradients.
     """
 
-    use_kernel = os.environ.get("MGS_USE_FUSED_ADALN", "1") != "0"
+    use_kernel = os.environ.get("WMS_USE_FUSED_ADALN", os.environ.get("MGS_USE_FUSED_ADALN", "1")) != "0"
     if not force_reference and use_kernel and _can_use_triton(x, scale, shift):
         return _FusedAdaLNFunction.apply(x, scale, shift, float(eps))
     return adaln_reference(x, scale, shift, eps)
@@ -226,7 +226,10 @@ def fused_gated_residual(
         return gated_residual_reference(residual, branch, gate)
     output = torch.empty_like(residual)
     numel = residual.numel()
-    grid = lambda meta: (triton.cdiv(numel, meta["BLOCK_SIZE"]),)
+
+    def grid(meta):
+        return (triton.cdiv(numel, meta["BLOCK_SIZE"]),)
+
     _gated_residual_forward_kernel[grid](
         residual,
         branch,

@@ -1,221 +1,224 @@
-# MatrixGame Systems
+# World Model Systems
 
-**Unofficial GPU-systems laboratory for Matrix-Game 3.0.**
+**A model-agnostic systems optimization library for causal video diffusion and interactive world models.**
 
-This repository turns an open interactive world model into a serious ML-systems artifact:
+World Model Systems separates reusable GPU/runtime machinery from thin upstream adapters. The goal is to make the same profiling, kernel, distributed-training, and serving infrastructure work across several rapidly changing world-model codebases without copying their source or weights.
 
-1. an end-to-end video-DiT performance report;
-2. a model-specific fused Triton AdaLN kernel;
-3. restartable, sharded, asynchronous distributed training utilities;
-4. a queueing, admission-controlled inference service with streaming progress and production metrics.
+The repository started as a Matrix-Game 3.0 systems project. Version 0.2 turns it into a registry-driven library and adds a second real optimization target: **LingBot-World 2.0**, a July 2026 causal Wan2.2 world model with chunked generation, KV caching, local attention, sink tokens, few-step inference, FSDP, and Ulysses sequence parallelism.
 
-The base target is **SkyworkAI Matrix-Game 3.0 5B**, pinned to upstream commit
-`71c3cd7f741311f8100f6cf9cde942b6c1378d11`. It is a 720p streaming interactive world model with autoregressive chunks, long-horizon memory, released 5B base/distilled weights, and an Apache-2.0 code release. It is a much cleaner foundation for a public systems project than source-available models with territorial or hosted-service restrictions.
+> This is an independent project. Upstream source and weights remain under their own licenses and are never redistributed here.
 
-> This is not an official SkyworkAI project. Model weights remain governed by their upstream terms. No weights are redistributed here.
+## Supported model adapters
 
-## Why this model
+| Adapter ID | Model | Why it matters | Integration status |
+|---|---|---|---|
+| `matrix-game-3` | SkyworkAI Matrix-Game 3.0 5B | 720p streaming interactive generation, memory, few-step inference, INT8, async VAE | Profiling, fused AdaLN patch, serving adapter |
+| `lingbot-world-v2` | Robbyant/Ant Group LingBot-World 2.0 14B causal-fast | Unbounded causal rollout, KV cache, local attention + sinks, four-step chunks, Wan2.2 backbone | **New:** reproducible launcher, profiler, fused AdaLN patch, experimental FP32 causal RoPE |
+| `hy-worldplay-1.5` | Tencent Hunyuan HY-World 1.5 / WorldPlay | Official Hunyuan causal world model with action control, memory, training code, RL and four-step distillation | Command/profiling adapter; source patching intentionally disabled |
 
-| Candidate | Why it is interesting | Why it is or is not the base |
-|---|---|---|
-| **Matrix-Game 3.0 (5B)** | Streaming autoregressive world model; long-horizon memory; 720p; distilled few-step path; existing INT8, FlashAttention, sequence parallelism, and asynchronous VAE hooks | **Selected.** Recent, task-trained, manageable 5B scale, weights released, permissive code license, and an unusually rich latency surface |
-| HY-World 1.5 / WorldPlay | Strong training stack, action control, memory, 5B/8B checkpoints, and a four-step distilled model | Excellent reference architecture, but its community license excludes several territories and is not a clean open-source base for a reusable portfolio project |
-| Matrix-Game 2.0 | Earlier real-time interactive world model | Useful historical baseline, but 3.0 is the more relevant systems target |
-| Generic Wan/Hunyuan video generators | Larger fine-tuning ecosystems | Strong backbones, but they are not themselves task-trained interactive world models |
+LingBot-World 2.0 is built on Alibaba's Wan2.2, but the released repository is from Robbyant/Ant Group rather than Alibaba Research. Its upstream code and weights are CC BY-NC-SA 4.0, so the adapter is research/non-commercial unless separate rights are obtained. HY-WorldPlay uses a custom Tencent license with territorial and hosted-service restrictions. The registry exposes these policies instead of burying them in a footnote.
 
-## What is implemented
+## Core architecture
 
-### Project 1 — Real performance report
+```text
+src/world_model_systems/
+├── core/                    model specs, capabilities, registry, optimization planner
+├── models/                  one thin adapter per upstream model
+├── integrations/            revision-pinned, idempotent source patch machinery
+├── optimizations/
+│   ├── kernels/             reusable Triton/PyTorch kernels
+│   ├── precision/           quantization and numerical policies (growing)
+│   ├── parallelism/         sequence/context parallel recipes (growing)
+│   └── runtime/             cache, compile, CUDA graph, VAE overlap recipes (growing)
+├── profiling/               common telemetry and model-command runner
+├── distributed/             restartable checkpoints, samplers, scaling utilities
+└── serving/                 generic serving contracts and model backends
 
-`mgs-profile` runs Matrix-Game or an arbitrary training command while collecting:
+src/matrixgame_systems/      compatibility package from v0.1; reusable code is retained
+configs/models/              declarative model defaults
+configs/recipes/             optimization recipes
+scripts/                     bootstrap, profile, Nsight, Slurm and service entrypoints
+```
 
-- end-to-end and phase latency;
-- forward, backward, optimizer, dataloader, VAE, checkpoint, and save time;
-- average and peak GPU utilization;
-- allocated/reserved/physical HBM;
-- estimated forward/training FLOPs, achieved TFLOP/s, and MFU;
-- NCCL fraction from a PyTorch Chrome trace;
-- dataloader stall and checkpoint-pause fractions;
-- frames per GPU-hour;
-- machine-readable JSON and a before/after Markdown report.
+The key abstraction is a `ModelAdapter`. It declares:
 
-The repository deliberately ships **no invented benchmark numbers**. The report becomes credible only after the included scripts are run on the target A/H-series GPU node with the real weights and workload.
+- upstream repository and pinned revision;
+- model family, size, license policy and capabilities;
+- a deterministic inference command;
+- model-specific source patches;
+- supported optimization passes.
 
-### Project 2 — Fused AdaLN Triton kernel
+Reusable optimizations never import an upstream repository. Upstream adapters import the reusable library.
 
-Matrix-Game repeatedly computes
+## Install
+
+```bash
+git clone https://github.com/Abecid/Wolrd-Model-Systems.git
+cd Wolrd-Model-Systems
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev,gpu,service]'
+```
+
+List the registered models:
+
+```bash
+wms models
+wms describe lingbot-world-v2
+wms plan lingbot-world-v2 --objective latency
+```
+
+## LingBot-World 2.0: first new optimization target
+
+### 1. Bootstrap the pinned upstream source
+
+```bash
+bash scripts/bootstrap_model.sh lingbot-world-v2
+```
+
+This checks out commit `2648877f763a06cc743bcd919936da4d25f12e7b` under `third_party/lingbot-world-v2`. The directory is gitignored.
+
+Download the official causal-fast checkpoint separately:
+
+```bash
+huggingface-cli download robbyant/lingbot-world-v2-14b-causal-fast \
+  --local-dir /path/to/lingbot-world-v2-14b-causal-fast
+```
+
+### 2. Generate a reproducible command
+
+```bash
+wms command lingbot-world-v2 \
+  --upstream third_party/lingbot-world-v2 \
+  --checkpoint /path/to/lingbot-world-v2-14b-causal-fast \
+  --image /path/to/example/image.jpg \
+  --prompt 'A character walks forward through the world.' \
+  --frames 361 --num-gpus 8
+```
+
+### 3. Profile the untouched baseline
+
+```bash
+wms-profile lingbot-world-v2 \
+  --upstream third_party/lingbot-world-v2 \
+  --checkpoint /path/to/lingbot-world-v2-14b-causal-fast \
+  --image /path/to/example/image.jpg \
+  --prompt 'A character walks forward through the world.' \
+  --frames 361 --num-gpus 8 \
+  --run-dir runs/lingbot_v2/bf16_baseline
+```
+
+The common report stack records wall time, GPU utilization, physical and PyTorch HBM, frames per GPU-hour, and workload fingerprints. Model-internal phase instrumentation is added only when the upstream adapter can do so without changing semantics.
+
+### 4. Apply the fused AdaLN patch
+
+LingBot's causal-fast DiT repeatedly computes
 
 ```text
 LayerNorm(x) * (1 + scale) + shift
 ```
 
-before attention and the MLP. `matrixgame_systems.kernels.adaln` provides:
-
-- a PyTorch reference;
-- a Triton forward kernel with FP32 statistics;
-- a Triton analytical backward kernel;
-- eager fallback for unsupported/broadcast shapes;
-- correctness and gradient tests for FP16/BF16/FP32;
-- benchmarks at Matrix-Game's hidden width `5120`;
-- an idempotent patcher for the pinned upstream model;
-- Nsight Systems and Nsight Compute launch scripts.
-
-### Project 3 — Restartable and scalable training
-
-The distributed package includes:
-
-- Ulysses-style sequence-parallel all-to-all transforms;
-- a stateful no-duplication distributed sampler;
-- `torch.distributed.checkpoint` sharded save/load;
-- asynchronous checkpoint staging with one in-flight checkpoint and atomic commit markers;
-- RNG, optimizer, scheduler, dataloader, config, and Git-commit capture;
-- deterministic validation seeds and sample selection;
-- restart-equivalence and sample-coverage tests;
-- throughput-regression gates;
-- an eight-GPU launch template and scaling-report schema.
-
-Concrete acceptance target:
-
-> Eight-GPU training resumes from an arbitrary committed checkpoint with matching next-step loss, zero duplicated sample IDs, checkpoint foreground pause below 2% of step time, and a documented 1/2/4/8-GPU parallel-efficiency curve.
-
-### Project 4 — Inference service
-
-The FastAPI service includes:
-
-- bounded request queue;
-- compatibility-aware dynamic batch scheduler;
-- HBM reservation/admission control;
-- model warm-up;
-- cancellation and per-request event streams over SSE;
-- p50/p95 latency and throughput metrics;
-- Prometheus endpoint and health/readiness checks;
-- worker failure propagation and restart-safe request states;
-- generic fixed-shape CUDA-graph runner;
-- BF16/INT8/experimental-FP8 configuration hooks;
-- Docker packaging and a concurrency load generator.
-
-The upstream Matrix-Game pipeline assumes batch size one in several memory/control paths. The service therefore defaults to `max_batch_size=1` for the real backend rather than pretending that queue coalescing is true tensor batching. The scheduler and batch API are fully implemented; enabling `max_batch_size>1` is guarded until the upstream state-machine adapter passes the included batch-equivalence contract.
-
-## Quick start
+before self-attention, the FFN, and the output head. The integration patch replaces those expressions with the same tested Triton AdaLN kernel used by Matrix-Game:
 
 ```bash
-git clone https://github.com/Abecid/matrixgame-systems.git
-cd matrixgame-systems
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev,gpu,service]'
-
-# Clone and pin Matrix-Game 3.0 without vendoring its code or weights.
-bash scripts/bootstrap_upstream.sh
-
-# Download weights using the upstream instructions, then point this variable at them.
-export MATRIX_GAME_CKPT=/path/to/Matrix-Game-3.0
+wms patch lingbot-world-v2 fused-adaln \
+  --upstream third_party/lingbot-world-v2
+export WMS_USE_FUSED_ADALN=1
 ```
 
-### Run a profiled inference
+The patch is:
+
+- pinned to the reviewed upstream revision;
+- idempotent;
+- fail-closed when source anchors change;
+- recorded in a JSON manifest inside the gitignored upstream checkout;
+- reversible by resetting the upstream checkout.
+
+### 5. Optional FP32 causal RoPE experiment
+
+Upstream causal RoPE promotes every Q/K tensor to complex128. The library includes a complex64 path and a numerical-equivalence test:
 
 ```bash
-mgs-profile matrixgame \
-  --upstream third_party/Matrix-Game/Matrix-Game-3 \
-  --run-dir runs/bf16_baseline \
-  --frames 97 --num-gpus 1 --peak-tflops 989 \
-  -- \
-  --size '704*1280' \
-  --ckpt_dir "$MATRIX_GAME_CKPT" \
-  --image demo_images/001/image.png \
-  --prompt 'A navigable animated city.' \
-  --num_iterations 2 --num_inference_steps 3 \
-  --fa_version 3 --compile_vae
-
-mgs-report runs/bf16_baseline
+wms patch lingbot-world-v2 fp32-causal-rope \
+  --upstream third_party/lingbot-world-v2
 ```
 
-For a multi-GPU run:
+This pass is marked **experimental**. It should not be enabled in a published performance claim until long-horizon output quality and drift are checked against the original complex128 path.
+
+### 6. Compare one change at a time
 
 ```bash
-torchrun --standalone --nproc_per_node=8 -m matrixgame_systems.profiling.matrixgame_runner \
-  --upstream third_party/Matrix-Game/Matrix-Game-3 \
-  --run-dir runs/8gpu \
-  --frames 97 --num-gpus 8 --peak-tflops 989 \
-  -- --ulysses_size 8 --dit_fsdp --t5_fsdp \
-  --size '704*1280' --ckpt_dir "$MATRIX_GAME_CKPT" \
-  --image demo_images/001/image.png --prompt 'A navigable animated city.' \
-  --num_iterations 2 --num_inference_steps 3 --fa_version 3
+# Baseline
+bash scripts/profile_lingbot_world_v2.sh baseline
+
+# Fused AdaLN only
+bash scripts/profile_lingbot_world_v2.sh fused-adaln
+
+# Generate a before/after report
+wms-report runs/lingbot_v2/bf16_baseline \
+  --candidate runs/lingbot_v2/fused_adaln
 ```
 
-### Run and integrate the Triton kernel
+The report refuses to calculate deltas when the prompt, image, frame count, GPU count, precision, checkpoint or model revision differ.
 
-```bash
-mgs-kernel-bench --hidden-size 5120 --rows 880 3520 8800 --dtype bfloat16
-python -m matrixgame_systems.integrations.patch_matrix_game \
-  --upstream third_party/Matrix-Game/Matrix-Game-3
+## Optimization taxonomy
 
-export MGS_USE_FUSED_ADALN=1
-```
+Optimizations are organized by what they change, not by the paper or model where they first appeared.
 
-### Profile a training step
+| Layer | Examples | Reuse boundary |
+|---|---|---|
+| Algorithm | few-step distillation, causal chunk size, CFG removal | Model/checkpoint capability |
+| Kernel | fused AdaLN, fused residual, RoPE, attention | Tensor contract and numerical tolerance |
+| Precision | BF16, FP8 GEMM, INT8 linear | Hardware + model quality contract |
+| Parallelism | Ulysses sequence parallel, FSDP, context parallel | Process topology and divisibility |
+| Runtime | KV cache, prewarm, CUDA graphs, async VAE | Static-shape/state-machine contract |
+| Data/training | resumable sampler, async DCP, dataloader overlap | Training-loop contract |
+| Serving | queueing, batching, admission control, cancellation | Backend request contract |
 
-```python
-from matrixgame_systems.profiling.events import PhaseRecorder
+`wms plan` selects only passes that are implemented, match the requested objective, and satisfy the model's declared capabilities. Experimental passes are excluded unless explicitly requested.
 
-prof = PhaseRecorder(run_dir="runs/train", frames_per_step=16, num_gpus=8)
-for step in range(max_steps):
-    with prof.phase("dataloader"):
-        batch = next(loader)
-    with prof.phase("forward"):
-        loss = model(batch)
-    with prof.phase("backward"):
-        loss.backward()
-    with prof.phase("optimizer"):
-        optimizer.step(); optimizer.zero_grad(set_to_none=True)
-    prof.mark_step(step)
-prof.close()
-```
+## Performance and correctness rules
 
-### Start the service
+1. **No fabricated benchmark numbers.** GPU claims require real weights and hardware.
+2. **One variable per comparison.** Do not bundle quantization, compile, kernel and resolution changes into one “speedup.”
+3. **End-to-end first.** Kernel latency is reported alongside total generation latency.
+4. **Slowest-rank timing.** Distributed critical path is the maximum rank time, not the sum.
+5. **Quality is a constraint.** Every numerical optimization needs tensor tests and model-level output checks.
+6. **Upstream revisions are pinned.** Patches fail when reviewed source anchors move.
+7. **Licenses are first-class metadata.** Supporting an adapter does not relicense its upstream model.
 
-```bash
-export MATRIX_GAME_UPSTREAM=$PWD/third_party/Matrix-Game/Matrix-Game-3
-export MATRIX_GAME_CKPT=/path/to/Matrix-Game-3.0
-mgs-serve --config configs/service.yaml
+## Existing systems modules
 
-curl -N -X POST http://localhost:8000/v1/generations \
-  -H 'content-type: application/json' \
-  -d '{"prompt":"A navigable city","image_path":"/data/start.png","num_iterations":2}'
-```
+The original Matrix-Game implementation remains available while the public API migrates:
 
-## Reproducible experiment matrix
+- phase timers, CUDA events, NVML sampling and trace parsing;
+- achieved TFLOP/s and estimated MFU support;
+- fused AdaLN Triton forward/backward and benchmarks;
+- Ulysses all-to-all transforms;
+- sharded asynchronous distributed checkpoints;
+- exact-resume distributed sampler;
+- deterministic validation and throughput regression gates;
+- FastAPI queue, HBM admission control, SSE progress, cancellation and metrics.
 
-Run the same prompt/image/seed in this order:
+The old `mgs-*` commands remain aliases in v0.2. New code should use `wms-*`.
 
-1. BF16 + synchronous VAE + eager AdaLN;
-2. BF16 + asynchronous VAE;
-3. BF16 + asynchronous VAE + fused AdaLN;
-4. upstream INT8 Q/K/V/O + fused AdaLN;
-5. 1/2/4/8-GPU sequence-parallel scaling.
+## Add another model
 
-The report generator computes deltas only when workload fingerprints match, preventing fake speedups from changed resolution, frame count, steps, prompt, or precision.
+Implement one adapter under `src/world_model_systems/models/` and register it in `core/registry.py`. A useful adapter must provide real contracts, not a name in a table:
 
-## Repository layout
+1. pin an upstream revision;
+2. declare capabilities and license constraints;
+3. build a reproducible launch command;
+4. define fail-closed source patches where appropriate;
+5. add CPU contract tests;
+6. add a real GPU benchmark recipe without invented output.
 
-```text
-src/matrixgame_systems/profiling    phase timers, NVML sampling, trace parser, reports
-src/matrixgame_systems/kernels      fused AdaLN Triton forward/backward + benchmarks
-src/matrixgame_systems/distributed  sequence parallelism, sampler, async DCP, regressions
-src/matrixgame_systems/serving      queue, batching, admission, SSE API, metrics
-src/matrixgame_systems/integrations pinned Matrix-Game patcher
-reports/                             report template; real run outputs are gitignored
-scripts/                             Nsight, Slurm, bootstrap, and service commands
-```
+See [`docs/MODEL_ADAPTERS.md`](docs/MODEL_ADAPTERS.md) and [`docs/LINGBOT_WORLD_V2.md`](docs/LINGBOT_WORLD_V2.md).
 
 ## Validation boundary
 
-CPU unit tests and restart logic can run in ordinary CI. CUDA/Triton, NCCL, FP8, CUDA graphs, Matrix-Game quality equivalence, and the final before/after traces require the actual NVIDIA GPU environment and released weights. CI skips those tests rather than manufacturing success.
+CPU tests cover the registry, planner, patch idempotence, restart logic, profiler/report contracts, serving scheduler and numerical kernel references. CUDA/Triton, NCCL, FP8, CUDA graphs, model quality, and end-to-end speedups require the actual NVIDIA environment and official checkpoints. CI skips those claims rather than manufacturing success.
 
 ## License
 
-This repository's original code is Apache-2.0. Upstream Matrix-Game code and model artifacts are separate works and are not redistributed.
-
-
-> Full candidate comparison and decision record: [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md)
-
+Original code in this repository is Apache-2.0. Every upstream model remains governed by its own source and weight terms. See [`THIRD_PARTY.md`](THIRD_PARTY.md).

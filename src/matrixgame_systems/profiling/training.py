@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +53,7 @@ class TrainingProfiler:
             self._trace_context = None
         self.phases.close()
 
-    def __enter__(self) -> "TrainingProfiler":
+    def __enter__(self) -> TrainingProfiler:
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:

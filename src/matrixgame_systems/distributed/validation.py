@@ -9,7 +9,7 @@ T = TypeVar("T")
 
 
 def deterministic_seed(base_seed: int, sample_id: str | int, step: int = 0) -> int:
-    payload = f"{base_seed}:{sample_id}:{step}".encode("utf-8")
+    payload = f"{base_seed}:{sample_id}:{step}".encode()
     return int.from_bytes(hashlib.blake2b(payload, digest_size=8).digest(), "little") % (2**31)
 
 

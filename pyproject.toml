@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "matrixgame-systems"
-version = "0.1.0"
-description = "GPU profiling, Triton kernels, resilient distributed training, and serving for Matrix-Game 3.0"
+name = "world-model-systems"
+version = "0.2.0"
+description = "GPU profiling, kernels, distributed training, and serving for causal video and world models"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
@@ -38,6 +38,15 @@ dev = [
 ]
 
 [project.scripts]
+wms = "world_model_systems.cli:main"
+wms-profile = "world_model_systems.profiling.cli:main"
+wms-report = "matrixgame_systems.profiling.report:main"
+wms-kernel-bench = "matrixgame_systems.kernels.benchmark:main"
+wms-precision-bench = "matrixgame_systems.kernels.precision_benchmark:main"
+wms-serve = "matrixgame_systems.serving.app:main"
+wms-loadtest = "matrixgame_systems.serving.loadtest:main"
+wms-regression = "matrixgame_systems.distributed.regression:main"
+# Backward-compatible aliases from the original Matrix-Game-only release.
 mgs-profile = "matrixgame_systems.profiling.cli:main"
 mgs-report = "matrixgame_systems.profiling.report:main"
 mgs-kernel-bench = "matrixgame_systems.kernels.benchmark:main"

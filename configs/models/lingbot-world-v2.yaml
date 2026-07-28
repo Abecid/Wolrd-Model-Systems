@@ -1,0 +1,10 @@
+id: lingbot-world-v2
+upstream: third_party/lingbot-world-v2
+checkpoint: ${LINGBOT_WORLD_V2_CKPT}
+resolution: [480, 832]
+frames: 361
+num_gpus: 8
+precision: bf16
+local_attn_size: 18
+sink_size: 6
+license_acknowledged: false
