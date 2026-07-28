@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["workload_fingerprint", "wall_time_s", "frames", "num_gpus"],
+  "properties": {
+    "workload_fingerprint": {"type": "string"},
+    "wall_time_s": {"type": "number", "exclusiveMinimum": 0},
+    "frames": {"type": "integer", "minimum": 0},
+    "num_gpus": {"type": "integer", "minimum": 1},
+    "phase_ms": {"type": "object"},
+    "gpu": {"type": "object"},
+    "derived": {"type": "object"}
+  }
+}

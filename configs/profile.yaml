@@ -1,0 +1,8 @@
+sample_interval_ms: 100
+warmup_steps: 1
+active_steps: 3
+repeat: 1
+trace_memory: true
+with_stack: false
+record_shapes: true
+profile_nvidia_smi: true

@@ -1,0 +1,19 @@
+services:
+  matrixgame:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    gpus: all
+    ipc: host
+    shm_size: 32gb
+    ports:
+      - "8000:8000"
+    environment:
+      MATRIX_GAME_UPSTREAM: /opt/Matrix-Game/Matrix-Game-3
+      MATRIX_GAME_CKPT: /weights/Matrix-Game-3.0
+    volumes:
+      - ${MATRIX_GAME_SOURCE:-../third_party/Matrix-Game}:/opt/Matrix-Game:ro
+      - ${MATRIX_GAME_WEIGHTS:?Set MATRIX_GAME_WEIGHTS}:/weights/Matrix-Game-3.0:ro
+      - ${MATRIX_GAME_DATA:-../data}:/data:ro
+      - ../outputs:/workspace/matrixgame-systems/outputs
+    command: ["--config", "configs/service.yaml"]

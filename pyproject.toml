@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matrixgame-systems"
+version = "0.1.0"
+description = "GPU profiling, Triton kernels, resilient distributed training, and serving for Matrix-Game 3.0"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "Adam", email = "41438776+Abecid@users.noreply.github.com"}]
+dependencies = [
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+  "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+gpu = [
+  "torch>=2.5",
+  "triton>=3.1; platform_system == 'Linux'",
+  "nvidia-ml-py>=12.560",
+]
+service = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "prometheus-client>=0.20",
+  "httpx>=0.27",
+  "orjson>=3.10",
+  "Pillow>=10.0",
+]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+mgs-profile = "matrixgame_systems.profiling.cli:main"
+mgs-report = "matrixgame_systems.profiling.report:main"
+mgs-kernel-bench = "matrixgame_systems.kernels.benchmark:main"
+mgs-precision-bench = "matrixgame_systems.kernels.precision_benchmark:main"
+mgs-serve = "matrixgame_systems.serving.app:main"
+mgs-loadtest = "matrixgame_systems.serving.loadtest:main"
+mgs-regression = "matrixgame_systems.distributed.regression:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

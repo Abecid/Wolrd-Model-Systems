@@ -1,0 +1,16 @@
+host: 0.0.0.0
+port: 8000
+backend: matrixgame
+upstream_path: ${MATRIX_GAME_UPSTREAM}
+checkpoint_path: ${MATRIX_GAME_CKPT}
+device: cuda:0
+precision: bf16
+max_queue_size: 32
+max_batch_size: 1
+max_batch_wait_ms: 15
+request_timeout_s: 900
+hbm_safety_fraction: 0.12
+estimated_model_bytes: 11000000000
+estimated_request_bytes: 5000000000
+warmup: false
+output_dir: outputs

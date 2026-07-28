@@ -1,0 +1,7 @@
+{
+  "description": "Representative Matrix-Game 3 AdaLN rows x hidden-size shapes",
+  "hidden_size": 5120,
+  "rows": [880, 3520, 8800],
+  "dtypes": ["float16", "bfloat16"],
+  "notes": "880 spatial tokens corresponds to 22x40 patches at 704x1280 after VAE and patch strides. Larger rows approximate multiple latent frames."
+}

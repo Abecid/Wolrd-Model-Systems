@@ -1,0 +1,14 @@
+model:
+  name: Matrix-Game-3.0-5B
+  upstream_commit: 71c3cd7f741311f8100f6cf9cde942b6c1378d11
+  hidden_size: 5120
+  ffn_hidden_size: 13824
+  num_heads: 40
+  num_layers: 40
+  latent_channels: 48
+  patch_size: [1, 2, 2]
+  vae_stride: [4, 16, 16]
+  default_height: 704
+  default_width: 1280
+  first_chunk_frames: 57
+  later_chunk_frames: 40

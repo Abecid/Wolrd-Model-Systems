@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU PyTorch
+        run: pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - name: Install package
+        run: pip install -e '.[dev,service]'
+      - name: Ruff
+        run: ruff check src tests examples
+      - name: Unit tests
+        run: pytest -q
+      - name: Compile all modules
+        run: python -m compileall -q src
+
+  gpu-contract:
+    if: ${{ false }}
+    runs-on: [self-hosted, linux, x64, gpu]
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -e '.[dev,gpu,service]'
+      - run: pytest -q tests/test_adaln.py -k triton
