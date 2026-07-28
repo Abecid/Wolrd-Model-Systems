@@ -5,9 +5,9 @@ import json
 import os
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterator
 
 
 @dataclass
@@ -139,7 +139,7 @@ class PhaseRecorder:
         memory_path.write_text(json.dumps(self.memory_summary(), indent=2), encoding="utf-8")
         self._closed = True
 
-    def __enter__(self) -> "PhaseRecorder":
+    def __enter__(self) -> PhaseRecorder:
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:

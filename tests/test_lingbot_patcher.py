@@ -2,7 +2,6 @@ from pathlib import Path
 
 from world_model_systems import get_model
 
-
 MODEL_SOURCE = """import torch.nn.functional as torch_F
 from .attention import flash_attention
 

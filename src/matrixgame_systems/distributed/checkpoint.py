@@ -171,7 +171,7 @@ class AsyncDistributedCheckpointer:
             )
         return json.loads((path / "manifest.json").read_text(encoding="utf-8"))
 
-    def __enter__(self) -> "AsyncDistributedCheckpointer":
+    def __enter__(self) -> AsyncDistributedCheckpointer:
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:

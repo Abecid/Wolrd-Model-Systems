@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 
 NCCL_MARKERS = ("nccl", "allreduce", "all_reduce", "allgather", "all_gather", "reduce_scatter", "alltoall")

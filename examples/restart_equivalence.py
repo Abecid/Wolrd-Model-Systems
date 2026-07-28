@@ -98,7 +98,9 @@ def run(total_steps: int, interrupt_step: int, root: Path) -> None:
         )
 
     torch.testing.assert_close(torch.tensor(resumed_losses), torch.tensor(baseline_losses), rtol=0, atol=0)
-    for baseline, resumed in zip(baseline_model.parameters(), restored_model.parameters()):
+    for baseline, resumed in zip(
+        baseline_model.parameters(), restored_model.parameters(), strict=True
+    ):
         torch.testing.assert_close(baseline, resumed, rtol=0, atol=0)
     print(
         f"Exact restart passed: {total_steps} steps, interruption at {interrupt_step}, "

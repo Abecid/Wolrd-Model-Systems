@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import torch
-
 from matrixgame_systems.common.manifest import environment_manifest, write_json_atomic
 from matrixgame_systems.distributed.checkpoint import AsyncDistributedCheckpointer
 from matrixgame_systems.profiling.events import PhaseRecorder

@@ -3,15 +3,18 @@ from __future__ import annotations
 import argparse
 import builtins
 import functools
-import json
 import os
 import runpy
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from matrixgame_systems.common.manifest import environment_manifest, stable_fingerprint, write_json_atomic
+from matrixgame_systems.common.manifest import (
+    environment_manifest,
+    stable_fingerprint,
+    write_json_atomic,
+)
 
 from .events import PhaseRecorder
 from .flops import WanDiTShape, estimate_wan_dit_forward_flops

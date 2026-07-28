@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from world_model_systems.core.spec import Capability, LaunchRequest, LicensePolicy, ModelSpec, OptimizationSpec
+from world_model_systems.core.spec import (
+    Capability,
+    LaunchRequest,
+    LicensePolicy,
+    ModelSpec,
+    OptimizationSpec,
+)
 from world_model_systems.integrations.patching import SourcePatch, apply_source_patches
 from world_model_systems.optimizations.catalog import STANDARD_OPTIMIZATIONS
 

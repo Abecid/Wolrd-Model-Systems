@@ -6,7 +6,11 @@ import subprocess
 import time
 from pathlib import Path
 
-from matrixgame_systems.common.manifest import environment_manifest, stable_fingerprint, write_json_atomic
+from matrixgame_systems.common.manifest import (
+    environment_manifest,
+    stable_fingerprint,
+    write_json_atomic,
+)
 from matrixgame_systems.profiling.gpu_monitor import GpuMonitor
 from world_model_systems.core.registry import get_model
 from world_model_systems.core.spec import LaunchRequest

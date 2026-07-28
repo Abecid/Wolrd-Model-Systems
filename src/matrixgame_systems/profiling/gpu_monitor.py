@@ -113,7 +113,7 @@ class GpuMonitor:
         )
         return self.output_path
 
-    def __enter__(self) -> "GpuMonitor":
+    def __enter__(self) -> GpuMonitor:
         self.start()
         return self
 
