@@ -1,0 +1,8 @@
+id: hy-worldplay-1.5
+upstream: third_party/HY-WorldPlay
+checkpoint: ${HY_WORLDPLAY_CKPT}
+resolution: [480, 832]
+frames: 125
+num_gpus: 8
+precision: bf16
+license_acknowledged: false

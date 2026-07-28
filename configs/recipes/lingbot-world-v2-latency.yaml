@@ -1,0 +1,17 @@
+model: lingbot-world-v2
+objective: latency
+baseline:
+  precision: bf16
+  prewarm: true
+  local_attn_size: 18
+  sink_size: 6
+passes:
+  - few-step
+  - kv-cache
+  - fused-adaln
+  - sequence-parallel
+experimental:
+  - fp32-causal-rope
+comparison_policy:
+  change_one_variable_at_a_time: true
+  require_matching_workload_fingerprint: true

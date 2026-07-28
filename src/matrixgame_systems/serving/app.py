@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,7 +20,7 @@ def create_app(config: dict[str, Any]):
         from fastapi.responses import StreamingResponse
         from pydantic import BaseModel, Field
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("Install matrixgame-systems[service]") from exc
+        raise RuntimeError("Install world-model-systems[service]") from exc
 
     class GenerationBody(BaseModel):
         prompt: str = Field(min_length=1, max_length=4096)
@@ -34,14 +33,14 @@ def create_app(config: dict[str, Any]):
         precision: str = "bf16"
         output_name: str | None = None
 
-    backend_name = str(config.get("backend", "matrixgame"))
+    backend_name = str(config.get("backend", "matrix-game-3"))
     if backend_name == "mock":
         backend = MockBackend(
             delay_s=float(config.get("mock_delay_s", 0.01)),
             max_batch_size=int(config.get("max_batch_size", 8)),
             output_dir=str(config.get("output_dir", "/tmp")),
         )
-    elif backend_name == "matrixgame":
+    elif backend_name in {"matrixgame", "matrix-game-3"}:
         upstream = str(config.get("upstream_path", ""))
         checkpoint = str(config.get("checkpoint_path", ""))
         if not upstream or upstream.startswith("${"):
@@ -90,7 +89,7 @@ def create_app(config: dict[str, Any]):
         yield
         await scheduler.close()
 
-    app = FastAPI(title="MatrixGame Systems", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="World Model Systems", version="0.2.0", lifespan=lifespan)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:
@@ -149,7 +148,7 @@ def create_app(config: dict[str, Any]):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the MatrixGame Systems inference service")
+    parser = argparse.ArgumentParser(description="Run the World Model Systems inference service")
     parser.add_argument("--config", default="configs/service.yaml")
     parser.add_argument("--host")
     parser.add_argument("--port", type=int)
